@@ -1,7 +1,6 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// Create a transporter using Gmail SMTP
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -10,9 +9,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Send a verification email with a clickable link
-const sendVerificationEmail = async (email, name, token) => {
-  const verificationUrl = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+// Added 'req' parameter to dynamically detect the live server URL
+const sendVerificationEmail = async (req, email, name, token) => {
+  const hostUrl = `${req.protocol}://${req.get("host")}`;
+  const verificationUrl = `${hostUrl}/api/auth/verify-email?token=${token}`;
 
   const mailOptions = {
     from: `"JobTrackr" <${process.env.EMAIL_USER}>`,

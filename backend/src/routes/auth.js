@@ -1,11 +1,12 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const pool = require("../db/pool");
+const { sendVerificationEmail } = require("../utils/emailService");
 
 const router = express.Router();
 
-// Helper to generate a token for a user
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email },
@@ -13,11 +14,6 @@ const generateToken = (user) => {
     { expiresIn: "7d" }
   );
 };
-
-// POST /api/auth/register
-// Creates a new user account
-const crypto = require("crypto");
-const { sendVerificationEmail } = require("../utils/emailService");
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
@@ -45,8 +41,6 @@ router.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate a random token for email verification
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
     const result = await pool.query(
@@ -58,9 +52,9 @@ router.post("/register", async (req, res) => {
 
     const newUser = result.rows[0];
 
-    // Send verification email — don't block registration if it fails
     try {
-      await sendVerificationEmail(email, name, verificationToken);
+      // Passed 'req' as the first parameter here
+      await sendVerificationEmail(req, email, name, verificationToken);
     } catch (emailErr) {
       console.error("Email sending failed:", emailErr.message);
     }
@@ -74,8 +68,8 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Something went wrong, try again" });
   }
 });
+
 // POST /api/auth/login
-// Logs in an existing user and returns a token
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -91,22 +85,22 @@ router.post("/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    // Add this after the isMatch check in login route
-    if (!user.verified) {
-      return res.status(401).json({ 
-        message: "Please verify your email before logging in. Check your inbox." 
-      });
-    }
-
+    // 1. Check existence FIRST to prevent crashing on missing accounts
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Compare the plain password with the stored hash
+    // 2. Validate password hashes
     const isMatch = await bcrypt.compare(password, user.password_hash);
-
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // 3. Confirm email validation status
+    if (!user.verified) {
+      return res.status(401).json({ 
+        message: "Please verify your email before logging in. Check your inbox." 
+      });
     }
 
     res.json({
@@ -120,8 +114,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-// GET /api/auth/verify-email?token=xxx
+// GET /api/auth/verify-email
 router.get("/verify-email", async (req, res) => {
   const { token } = req.query;
 
@@ -140,11 +133,13 @@ router.get("/verify-email", async (req, res) => {
       [token]
     );
 
-    // Redirect to frontend with success message
-    res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+    // Dynamic redirection back to your production client domain
+    const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    res.redirect(`${frontendUrl}/login?verified=true`);
   } catch (err) {
     console.error("Verify email error:", err.message);
     res.status(500).json({ message: "Verification failed" });
   }
 });
+
 module.exports = router;

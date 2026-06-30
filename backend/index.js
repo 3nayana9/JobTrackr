@@ -16,12 +16,12 @@ app.use(cors({
     "http://localhost:5173",
     "https://job-trackr-nine-nu.vercel.app",
     "https://job-trackr-git-main-3-nayana9.vercel.app",
-    "https://jobtrackr-fk00i7xc9-3-nayana9.vercel.app" 
+    "https://jobtrackr-fk00i7xc9-3-nayana9.vercel.app"
   ],
   credentials: true
 }));
 
-//  ADD THIS EXACT LINE HERE:
+// This parses incoming JSON data (Crucial for handling Login/Register requests!)
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
