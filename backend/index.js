@@ -15,7 +15,8 @@ app.use(cors({
   origin: [
     "http://localhost:5173",
     "https://job-trackr-nine-nu.vercel.app",
-    "https://job-trackr-git-main-3-nayana9.vercel.app"
+    "https://job-trackr-git-main-3-nayana9.vercel.app",
+    "https://jobtrackr-fk00i7xc9-3-nayana9.vercel.app" // Add this exact URL
   ],
   credentials: true
 }));
