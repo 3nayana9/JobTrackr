@@ -12,10 +12,13 @@ const resumeRoutes = require("./src/routes/resumes");
 const app = express();
 
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: [
+    "http://localhost:5173",
+    "https://job-trackr-nine-nu.vercel.app",
+    "https://job-trackr-git-main-3-nayana9.vercel.app"
+  ],
   credentials: true
 }));
-app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
