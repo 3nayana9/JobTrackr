@@ -1,15 +1,22 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+// Updated transporter config to handle Render's IPv6 / Port constraints
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // Must be false for port 587 (STARTTLS)
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    // This forces Node to prioritize IPv4 connections over broken IPv6 networks
+    rejectUnauthorized: false
+  }
 });
 
-// Added 'req' parameter to dynamically detect the live server URL
+// Send a verification email with a clickable link
 const sendVerificationEmail = async (req, email, name, token) => {
   const hostUrl = `${req.protocol}://${req.get("host")}`;
   const verificationUrl = `${hostUrl}/api/auth/verify-email?token=${token}`;
